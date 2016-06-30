@@ -19,7 +19,14 @@ def get_soup(url):
     return soup
 
 
-def get_next_urlSuffix(soup):
+def get_next_url(soup):
+    '''
+    Returns a new URL based on the curent URLs links.  Used to loop through
+    and entire threads posts
+    
+    Arguements:
+    soup - a soup 
+    '''
     urlReturn =''
     pattern = re.compile('Next')
     for a in soup.find_all('a', text=pattern):
@@ -29,9 +36,21 @@ def get_next_urlSuffix(soup):
     #Returns none if empty
     
     
-def extract_data(url , df):
-    soup = get_soup(url)
+def extract_data(url):
+    '''
+    Extracts all data from a specific url following conventions of posts
+    on the site.  
     
+    Arguements:
+    url -  the page URL to scrape.  Must be a full URL with domain
+    df - the dataframe to be populated and returns
+    
+    TODO -  A more robust method to index actual posts vs quotes ( which 
+    have no text nodes)
+    '''
+    
+    soup = get_soup(url)
+    df = pd.DataFrame(columns = fields, index = range(1,16))
     #Get post_id data, input into a dataframe
     pattern = re.compile('[0-9]')
     post_id_details = soup.find_all('a',{"name":True})
@@ -50,27 +69,48 @@ def extract_data(url , df):
      
     #Get Body of Post
     body_details = soup.find_all('span', {"class": 'postbody'})
-    for idx,value in enumerate(body_details) if value.getText() != '':
-        print value.getText()
-        
+    
+    print()
+    
+    indexValue = 1
+    for idx,value in enumerate(body_details):
+       if value.getText() == '':
+           pass
+       else:
+          
+           print(indexValue, value.getText())
+           #df.ix[indexValue]['body'] = value.getText();
+           indexValue +=1
     return df
 
 if __name__ == "__main__":
     path = str(os.path.dirname(os.path.realpath(__file__)))+'/data/'
     
     fields = ['post_id', 'name', 'date', 'body']
-    df = pd.DataFrame(columns = fields, index = range(1,16))
-    
-    urlPrefix = 'http://www.oldclassiccar.co.uk/forum/phpbb/phpBB2/'
-    urlSuffix = 'viewtopic.php?t=12591'
-    url = urlPrefix+urlSuffix
-    
-    dfNew = extract_data(url,df)
     
     
-    
-    
+    url = 'http://www.oldclassiccar.co.uk/forum/phpbb/phpBB2/viewtopic.php?t=12591'
+    urlList = [url]
+
+    #Generate list of URLs.  Will break as soon as no new URL is present
     soup = get_soup(url)
-    newUrl = get_next_urlSuffix(soup)
-    
-    
+    while True:
+        newUrlSuffix = get_next_url(soup)
+        if newUrlSuffix == '':
+            break
+        newUrl = 'http://www.oldclassiccar.co.uk/forum/phpbb/phpBB2/' + newUrlSuffix
+        print("Adding new URL to list..")
+        urlList.append(newUrl)
+        soup = get_soup(newUrl)
+        
+    extract_data(urlTest)
+
+    # urlList is populated, collect data and append dataframe with each
+    # Pages post information
+    '''
+    for url in urlList:
+        print("Extracting data from the url - " + url)
+        dfNew = extract_data(url)
+        #df = pd.concat(df, dfNew)
+    '''   
+        
