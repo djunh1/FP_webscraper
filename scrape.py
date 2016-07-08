@@ -7,8 +7,10 @@ Created on Mon Jun 27 18:46:23 2016
 
 import re
 import os
+import sys
 
 import pandas as pd
+import numpy as np
 from bs4 import BeautifulSoup
 import urllib
 
@@ -35,7 +37,7 @@ def get_next_url(soup):
     return urlReturn
     #Returns none if empty
     
-    
+
 def extract_data(url):
     '''
     Extracts all data from a specific url following conventions of posts
@@ -51,6 +53,7 @@ def extract_data(url):
     
     soup = get_soup(url)
     df = pd.DataFrame(columns = fields, index = range(1,16))
+    dfBody = pd.DataFrame(columns = ['body'], index = range(1,40))
     #Get post_id data, input into a dataframe
     pattern = re.compile('[0-9]')
     post_id_details = soup.find_all('a',{"name":True})
@@ -66,34 +69,46 @@ def extract_data(url):
     #Get Date of post
     for idx, value in enumerate(soup(text=re.compile('Posted:'))):
         df.ix[idx+1]['date'] = value.parent.getText()[7:][:26]
-     
+
     #Get Body of Post
     body_details = soup.find_all('span', {"class": 'postbody'})
-    
-    print()
-    
     indexValue = 1
     for idx,value in enumerate(body_details):
        if value.getText() == '':
            pass
        else:
-          
-           print(indexValue, value.getText())
-           #df.ix[indexValue]['body'] = value.getText();
+           dfBody.ix[indexValue]['body'] = value.getText()
            indexValue +=1
+           
+    dfNew = dfBody.drop_duplicates().reset_index(drop = True)
+    dfNew.index = range(1,len(dfNew)+1)
+    df['body'] = dfNew
     return df
+   
+   
+def clean_data(df):
+    
+    df = df.reset_index(drop = True).dropna()
+    return df
+    
+    
+def data_to_csv(df):
+    filePathString = path + 'forum.csv'
+    df.to_csv(filePathString)
 
 if __name__ == "__main__":
     path = str(os.path.dirname(os.path.realpath(__file__)))+'/data/'
-    
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
     fields = ['post_id', 'name', 'date', 'body']
-    
+    df = pd.DataFrame(columns = fields)
     
     url = 'http://www.oldclassiccar.co.uk/forum/phpbb/phpBB2/viewtopic.php?t=12591'
     urlList = [url]
 
     #Generate list of URLs.  Will break as soon as no new URL is present
     soup = get_soup(url)
+
     while True:
         newUrlSuffix = get_next_url(soup)
         if newUrlSuffix == '':
@@ -102,15 +117,18 @@ if __name__ == "__main__":
         print("Adding new URL to list..")
         urlList.append(newUrl)
         soup = get_soup(newUrl)
-        
-    extract_data(urlTest)
 
     # urlList is populated, collect data and append dataframe with each
     # Pages post information
-    '''
-    for url in urlList:
-        print("Extracting data from the url - " + url)
-        dfNew = extract_data(url)
-        #df = pd.concat(df, dfNew)
-    '''   
-        
+     
+    dft = extract_data('http://www.oldclassiccar.co.uk/forum/phpbb/phpBB2/viewtopic.php?t=12591&postdays=0&postorder=asc&start=75&sid=efa57f3533e503c2622eb82e82e546d4')
+
+   
+    for link in urlList:
+        print("Extracting data from the url - " + link + '\n\n\n')
+        dfNew = extract_data(link)
+        df = pd.concat([df, dfNew])
+
+    dfCleaned = clean_data(df)
+    data_to_csv(dfCleaned)
+    
