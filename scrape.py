@@ -10,7 +10,6 @@ import os
 import sys
 
 import pandas as pd
-import numpy as np
 from bs4 import BeautifulSoup
 import urllib
 
@@ -96,6 +95,7 @@ def data_to_csv(df):
     filePathString = path + 'forum.csv'
     df.to_csv(filePathString)
 
+
 if __name__ == "__main__":
     path = str(os.path.dirname(os.path.realpath(__file__)))+'/data/'
     reload(sys)
@@ -120,10 +120,7 @@ if __name__ == "__main__":
 
     # urlList is populated, collect data and append dataframe with each
     # Pages post information
-     
-    dft = extract_data('http://www.oldclassiccar.co.uk/forum/phpbb/phpBB2/viewtopic.php?t=12591&postdays=0&postorder=asc&start=75&sid=efa57f3533e503c2622eb82e82e546d4')
 
-   
     for link in urlList:
         print("Extracting data from the url - " + link + '\n\n\n')
         dfNew = extract_data(link)
