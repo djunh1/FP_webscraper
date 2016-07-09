@@ -3,6 +3,9 @@
 Created on Mon Jun 27 18:46:23 2016
 
 @author: djunh
+
+This script scrapes one (1) forum's posts and saves them to a file named
+forum.csv in the /data directory.  
 """
 
 import re
@@ -26,7 +29,7 @@ def get_next_url(soup):
     and entire threads posts
     
     Arguements:
-    soup - a soup 
+    soup - a beautiful soup generated soup
     '''
     urlReturn =''
     pattern = re.compile('Next')
@@ -46,7 +49,7 @@ def extract_data(url):
     url -  the page URL to scrape.  Must be a full URL with domain
     df - the dataframe to be populated and returns
     
-    TODO -  A more robust method to index actual posts vs quotes ( which 
+    TODO -  A more robust method to index actual posts vs quotes (which 
     have no text nodes)
     '''
     
@@ -86,7 +89,12 @@ def extract_data(url):
    
    
 def clean_data(df):
+    '''
+    Cleans the data to prep to saving to a CSV.  
     
+    arguements:
+    df -  a dataframe to be cleaned
+    '''
     df = df.reset_index(drop = True).dropna()
     return df
     
@@ -126,6 +134,7 @@ if __name__ == "__main__":
         dfNew = extract_data(link)
         df = pd.concat([df, dfNew])
 
+    #Clean the data, and save the data to the /data directory
     dfCleaned = clean_data(df)
     data_to_csv(dfCleaned)
     
